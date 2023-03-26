@@ -1,41 +1,27 @@
-from typing import Annotated
-from main import model_predict
-from fastapi import FastAPI, File, UploadFile
-import shutil
-import random
-import string
-import os
-from fastapi.middleware.cors import CORSMiddleware
+# TF2 version
+import tensorflow.compat.v2 as tf
+import tensorflow_hub as hub
 
-app = FastAPI()
+model = hub.KerasLayer('https://tfhub.dev/google/aiy/vision/classifier/food_V1/1')
 
-origins = ["*"]
+import numpy as np
+import pandas as pd
+import cv2
+from skimage import io
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+#cake_url = "https://storage.googleapis.com/tfhub-visualizers/google/aiy/vision/classifier/food_V1/1/image_1.jpg"
+labelmap_url = "https://www.gstatic.com/aihub/tfhub/labelmaps/aiy_food_V1_labelmap.csv"
+input_shape = (224, 224)
 
-# def generate_random_string(length):
-#     letters = string.ascii_letters
-#     result_str = ''.join(random.choice(letters) for i in range(length))
-#     return result_str
-
-@app.post("/uploadfile/")
-async def create_upload_image(file: UploadFile = File(...)):
-    try:
-        os.mkdir("uploaded_images")
-    except:
-        pass
-    file_location = f"uploaded_images/{file.filename}"
-    with open(file_location, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    try:
-        output = model_predict(file_location)
-    except:
-        return {"Error": "No such Category Exists. I am still learning!"}
-    os.remove(file_location)
-    return {"Prediction": output}
+def model_predict(image_path):
+    image = np.asarray(io.imread(image_path), dtype="float")
+    image = cv2.resize(image, dsize=input_shape, interpolation=cv2.INTER_CUBIC)
+    # Scale values to [0, 1].
+    image = image / image.max()
+    # The model expects an input of (?, 224, 224, 3).
+    images = np.expand_dims(image, 0)
+    # This assumes you're using TF2.
+    output = model(images)
+    predicted_index = output.numpy().argmax()
+    classes = list(pd.read_csv(labelmap_url)["name"])
+    return classes[predicted_index]
