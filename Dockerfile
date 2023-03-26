@@ -1,5 +1,7 @@
 FROM python:3.9-slim
 
+RUN pip install --upgrade pip
+
 RUN mkdir /nutri
 
 WORKDIR /nutri
@@ -7,7 +9,7 @@ WORKDIR /nutri
 COPY requirements.txt .
 
 RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
-RUN pip install -r requirements.txt
+RUN pip --no-cache-dir install -r requirements.txt
 
 COPY . .
 
