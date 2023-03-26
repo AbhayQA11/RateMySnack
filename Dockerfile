@@ -1,8 +1,8 @@
 FROM python:3.9-slim
 
-RUN mkdir /code
+RUN mkdir /nutri
 
-WORKDIR /code
+WORKDIR /nutri
 
 COPY requirements.txt .
 
